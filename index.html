@@ -164,6 +164,12 @@
     <audio id="sfx-click" src="./sfx-click.mp3"></audio>
     <audio id="sfx-roulette" src="./sfx-roulette.mp3"></audio>
 
+<audio id="v-sure-1" src="voice_sure_1.mp3"></audio>
+<audio id="v-sure-2" src="voice_sure_2.mp3"></audio>
+<audio id="v-sure-3" src="voice_sure_3.mp3"></audio>
+<audio id="v-sure-4" src="voice_sure_4.mp3"></audio>
+<audio id="v-sure-5" src="voice_sure_5.mp3"></audio>
+
     <div class="container">
         
         <!-- TELA 1: INÍCIO -->
@@ -288,23 +294,41 @@
             endTitle: document.getElementById('end-title')
         };
 
-        function playSFX(id) {
-            const audio = document.getElementById(id);
-            if(audio) { audio.currentTime = 0; audio.play().catch(()=>{}); }
-        }
+      function playSFX(id) {
+    const audio = document.getElementById(id);
+    if (audio) {
+        audio.pause(); // Arrête le son s'il est déjà en lecture
+        audio.currentTime = 0; // Revient au début
+        audio.play().catch(error => {
+            console.log("Erreur lecture audio : ", error);
+        });
+    }
+}
 
         function startGame() {
-            gameQuestions = [...questionPool].sort(() => 0.5 - Math.random()).slice(0, 10);
-            currentLevel = 0;
-            jokers.elimination.used = false;
-            jokers.skip.used = false;
-            els.btnJokerElim.disabled = false;
-            els.btnJokerSkip.disabled = false;
-            document.getElementById('start-screen').classList.remove('active');
-            document.getElementById('end-screen').classList.remove('active');
-            document.getElementById('game-screen').classList.add('active');
-            loadQuestion();
-        }
+    // Jouer un son vide ou court pour "débloquer" l'audio sur le navigateur
+    playSFX('sfx-click'); 
+    
+    gameQuestions = [...questionPool].sort(() => 0.5 - Math.random()).slice(0, 10);
+    currentLevel = 0;
+    jokers.elimination.used = false;
+    jokers.skip.used = false;
+    els.btnJokerElim.disabled = false;
+    els.btnJokerSkip.disabled = false;
+    
+    document.getElementById('start-screen').classList.remove('active');
+    document.getElementById('end-screen').classList.remove('active');
+    document.getElementById('game-screen').classList.add('active');
+    
+    // Lancer la musique de fond
+    const bgMusic = document.getElementById('sfx-bg');
+    if(bgMusic) {
+        bgMusic.volume = 0.5; // Optionnel : baisser un peu le volume du fond
+        bgMusic.play().catch(e => console.log("Musique de fond bloquée"));
+    }
+    
+    loadQuestion();
+}
 
         function loadQuestion() {
             const q = gameQuestions[currentLevel];
@@ -327,15 +351,23 @@
             });
         }
 
-        function selectOption(idx, btn) {
-            if(isLocked || btn.classList.contains('disabled')) return;
-            document.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            selectedAnswerIndex = idx;
-            els.host.src = hostImages.suspense;
-            playSFX('sfx-click');
-            els.confirm.classList.remove('hidden');
-        }
+       function selectOption(idx, btn) {
+    if(isLocked || btn.classList.contains('disabled')) return;
+    
+    document.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedAnswerIndex = idx;
+    
+    els.host.src = hostImages.suspense; // Changement d'image de l'hôte
+    playSFX('sfx-click'); // Son du clic
+    
+    // C'EST ICI QUE TA VOIX JOUE
+    setTimeout(() => {
+        playRandomVoice(); 
+    }, 500); // On attend 0.5s après le clic pour que tu parles
+    
+    els.confirm.classList.remove('hidden');
+}
 
         function confirmFinalAnswer() {
             if(selectedAnswerIndex === null || isLocked) return;
@@ -442,6 +474,29 @@
                 else loadQuestion();
             }
         }
+
+function playRandomVoice() {
+    const bgMusic = document.getElementById('sfx-bg');
+    
+    // 1. Choisir un des sons de ta voix au hasard
+    const randomIdx = Math.floor(Math.random() * 5) + 1; // De 1 à 5
+    const voiceId = 'v-sure-' + randomIdx;
+    const voiceAudio = document.getElementById(voiceId);
+
+    if (voiceAudio) {
+        // 2. Baisser la musique de fond pour bien t'entendre
+        if(bgMusic) bgMusic.volume = 0.1; 
+
+        voiceAudio.currentTime = 0;
+        voiceAudio.play().then(() => {
+            // 3. Quand tu as fini de parler, remettre la musique plus fort
+            voiceAudio.onended = () => {
+                if(bgMusic) bgMusic.volume = 0.5;
+            };
+        }).catch(e => console.error("Erreur voix :", e));
+    }
+}
+
     </script>
 </body>
 </html>
